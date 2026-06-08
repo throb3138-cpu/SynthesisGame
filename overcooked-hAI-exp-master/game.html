@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <title>🍳 Overcooked 웹 게임</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #f0a500;
+            text-shadow: 0 0 10px rgba(240,165,0,0.5);
+        }
+
+        #subtitle {
+            color: #aaa;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        /* 레이아웃 선택 화면 */
+        #start-screen {
+            text-align: center;
+        }
+
+        .layout-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 20px auto;
+            max-width: 600px;
+        }
+
+        .layout-btn {
+            background: #16213e;
+            border: 2px solid #0f3460;
+            color: #eee;
+            padding: 16px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .layout-btn:hover {
+            border-color: #f0a500;
+            background: #0f3460;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(240,165,0,0.3);
+        }
+
+        .layout-btn .layout-name {
+            font-weight: bold;
+            font-size: 1rem;
+            color: #f0a500;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        /* 게임 화면 */
+        #game-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        #hud {
+            display: flex;
+            gap: 30px;
+            background: #16213e;
+            border: 2px solid #0f3460;
+            border-radius: 10px;
+            padding: 12px 30px;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            align-items: center;
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud-label {
+            font-size: 0.7rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hud-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #f0a500;
+        }
+
+        #time-value.urgent {
+            color: #ff4444;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        #game-canvas-container {
+            border: 3px solid #0f3460;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(15,52,96,0.8);
+        }
+
+        #controls-info {
+            margin-top: 15px;
+            background: #16213e;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 0.85rem;
+            color: #888;
+            display: flex;
+            gap: 20px;
+        }
+
+        .key-hint {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .key {
+            background: #0f3460;
+            border: 1px solid #4a90d9;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #4a90d9;
+        }
+
+        #back-btn {
+            margin-top: 15px;
+            background: #0f3460;
+            border: 2px solid #4a90d9;
+            color: #eee;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        #back-btn:hover {
+            background: #4a90d9;
+            color: #fff;
+        }
+
+        /* 게임 종료 오버레이 */
+        #game-over-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-over-overlay.show {
+            display: flex;
+        }
+
+        #game-over-box {
+            background: #16213e;
+            border: 3px solid #f0a500;
+            border-radius: 16px;
+            padding: 40px 60px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(240,165,0,0.4);
+        }
+
+        #game-over-box h2 {
+            font-size: 2rem;
+            color: #f0a500;
+            margin-bottom: 10px;
+        }
+
+        #final-score {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #fff;
+            margin: 15px 0;
+        }
+
+        .game-over-btns {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .game-over-btn {
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-replay {
+            background: #f0a500;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+
+        .btn-replay:hover { background: #ffb81c; }
+
+        .btn-menu {
+            background: #0f3460;
+            color: #eee;
+            border: 2px solid #4a90d9;
+        }
+
+        .btn-menu:hover { background: #4a90d9; }
+
+        /* 서버 안내 */
+        #server-notice {
+            background: #2d1b00;
+            border: 1px solid #f0a500;
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-size: 0.82rem;
+            color: #f0a500;
+            margin-bottom: 18px;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        #server-notice code {
+            background: #1a1a2e;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+
+<h1>🍳 Overcooked</h1>
+<p id="subtitle">AI와 함께하는 요리 협력 게임</p>
+
+<div id="server-notice">
+    ⚠️ 로컬에서 실행 시: <code>python -m http.server 8000</code> 후
+    <code>http://localhost:8000/game.html</code> 로 접속하세요.
+</div>
+
+<!-- 시작 화면: 레이아웃 선택 -->
+<div id="start-screen">
+    <p style="color:#aaa; margin-bottom:10px;">레이아웃을 선택하세요</p>
+    <div class="layout-grid">
+        <button class="layout-btn" onclick="startGame('cramped_room')">
+            <span class="layout-name">Cramped Room</span>
+            좁은 주방에서<br>빠른 협력이 필요!
+        </button>
+        <button class="layout-btn" onclick="startGame('asymmetric_advantages')">
+            <span class="layout-name">Asymmetric</span>
+            비대칭 구조의<br>전략적 배치
+        </button>
+        <button class="layout-btn" onclick="startGame('coordination_ring')">
+            <span class="layout-name">Coordination Ring</span>
+            링 모양 주방<br>순환 협력!
+        </button>
+        <button class="layout-btn" onclick="startGame('random3')">
+            <span class="layout-name">Random 3</span>
+            넓은 주방에서<br>역할 분담
+        </button>
+        <button class="layout-btn" onclick="startGame('random0')">
+            <span class="layout-name">Random 0</span>
+            복잡한 동선<br>도전 레벨
+        </button>
+        <button class="layout-btn" onclick="startGame('simple')">
+            <span class="layout-name">Simple</span>
+            초보자용<br>연습 레벨
+        </button>
+    </div>
+    <p style="color:#666; font-size:0.8rem; margin-top:10px;">
+        🟢 초록색 = 내 캐릭터 &nbsp;|&nbsp; 🔵 파란색 = AI 파트너
+    </p>
+</div>
+
+<!-- 게임 화면 -->
+<div id="game-screen">
+    <div id="hud">
+        <div class="hud-item">
+            <span class="hud-label">점수</span>
+            <span class="hud-value" id="score-value">0</span>
+        </div>
+        <div class="hud-item">
+            <span class="hud-label">남은 시간</span>
+            <span class="hud-value" id="time-value">60</span>
+        </div>
+        <div class="hud-item">
+            <span class="hud-label">레이아웃</span>
+            <span class="hud-value" style="font-size:0.9rem; color:#4a90d9" id="layout-display">-</span>
+        </div>
+    </div>
+
+    <div id="game-canvas-container">
+        <div id="game-area"></div>
+    </div>
+
+    <div id="controls-info">
+        <div class="key-hint">
+            <span class="key">←↑↓→</span> 이동
+        </div>
+        <div class="key-hint">
+            <span class="key">Space</span> 상호작용
+        </div>
+        <div class="key-hint" style="color:#666">
+            양파 3개 → 냄비 → 요리 완료 → 그릇 → 서빙
+        </div>
+    </div>
+
+    <button id="back-btn" onclick="goToMenu()">← 메뉴로</button>
+</div>
+
+<!-- 게임 종료 오버레이 -->
+<div id="game-over-overlay">
+    <div id="game-over-box">
+        <h2>⏱ 시간 종료!</h2>
+        <div style="color:#aaa; font-size:1rem;">최종 점수</div>
+        <div id="final-score">0</div>
+        <div style="color:#888; font-size:0.85rem;">서빙 1회 = 5점</div>
+        <div class="game-over-btns">
+            <button class="game-over-btn btn-replay" onclick="replayGame()">🔄 다시하기</button>
+            <button class="game-over-btn btn-menu" onclick="goToMenu()">🏠 메뉴</button>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================
+     overcooked 라이브러리 로드
+     (task.js = overcooked npm 패키지 browserify 번들)
+====================================================== -->
+<script src="static/js/task/task.js"></script>
+
+<script>
+// =====================================================
+// Overcooked 게임 엔진 초기화
+// =====================================================
+
+// task.js는 browserify 번들로, 마지막 모듈을 전역으로 노출하지 않음.
+// 번들의 마지막 진입점 모듈(모듈 1)이 { OvercookedMDP, OvercookedGame }을 export.
+// browserify는 마지막 require 결과를 window에 노출하지 않으므로
+// 번들을 수정하거나 래퍼가 필요.
+// 대신: task.js 번들 내부 구조를 이용해 전역 변수로 캡처.
+
+// task.js를 로드하면 번들 함수가 실행되어 내부 모듈들이 등록됨.
+// 번들의 첫 번째 모듈(id=1)이 overcooked 라이브러리임.
+// browserify의 require를 외부에서 접근하는 방법:
+// 번들 끝에 },{},[1]) 형태로 진입 모듈 번호 지정.
+// 전역 require가 없으면 직접 접근 불가.
+
+// 해결: task.js 앞에 간단한 전역 브릿지를 삽입하거나,
+// 아래처럼 번들이 로드된 후 전역 Overcooked 객체를 확인.
+
+var Overcooked;
+var OvercookedGame;
+var OvercookedMDP;
+var Direction;
+var Action;
+var NORTH, SOUTH, EAST, WEST, STAY, INTERACT;
+
+// task.js 로드 후 전역 확인 - 번들이 전역 변수를 노출하지 않으면
+// 직접 게임 로직을 구현해야 함
+// 아래에서 task.js 번들 구조 파악 후 접근
+
+</script>
+
+<!-- 번들에서 Overcooked 추출을 위한 래퍼 -->
+<script>
+// task.js는 standalone overcooked 라이브러리 번들.
+// 번들 내부의 require 시스템을 활용하기 위해
+// 번들 실행 전에 전역 require 훅을 설치.
+
+// task.js가 이미 로드됨. 번들의 내부 모듈 시스템을 통해
+// overcooked 모듈에 접근하는 방법:
+// browserify 번들은 마지막 실행 시 s([entry_ids]) 를 호출.
+// 이 번들의 경우 entry가 없거나 1번 모듈.
+
+// 대안: task.js 소스를 분석해서 OvercookedGame, OvercookedMDP 클래스를
+// 직접 재구현하는 대신, 번들을 다시 로드하되 require 결과를 캡처.
+
+// 실제 접근법: 번들을 fetch해서 module exports를 직접 추출
+async function loadOvercookedLibrary() {
+    try {
+        const response = await fetch('static/js/task/task.js');
+        const code = await response.text();
+        
+        // browserify 번들을 수정하여 마지막 모듈의 exports를 전역으로 노출
+        // 번들 형식: (function e(t,n,r){...})({modules...},{},[entry]);
+        // entry 모듈 1의 exports를 캡처하기 위해 래핑
+        
+        const wrappedCode = `
+(function() {
+    var _modules_result;
+    var _orig_bundle = ` + code.trim() + `;
+    // 번들을 직접 실행하고 모듈 1 접근 시도
+    return _modules_result;
+})();
+        `;
+        
+        // 더 간단한 방법: 번들 함수를 직접 수정
+        // browserify 번들: (function e(t,n,r){...})({1:[...], 2:[...]...}, {}, []);
+        // 마지막 인자 []를 [1]로 바꾸면 모듈 1이 실행되고 exports 반환
+        
+        // 번들에서 진입점 찾기
+        const entryMatch = code.match(/\},\{\},\[([^\]]*)\]\);?\s*$/);
+        
+        let modifiedCode;
+        if (entryMatch && entryMatch[1] === '') {
+            // 진입점이 없음 - 라이브러리 번들. 모듈 1을 진입점으로 설정
+            modifiedCode = code.replace(/\},\{\},\[\]\);?\s*$/, 
+                '},{},[1]);');
+        } else {
+            modifiedCode = code;
+        }
+        
+        // eval로 실행하되 결과 캡처
+        // browserify의 s() 함수가 반환하는 모듈 exports를 가로채기
+        const captureCode = `
+var __overcooked_exports;
+var __orig_code = ${JSON.stringify(modifiedCode)};
+
+// 번들 코드를 수정하여 모듈 1의 exports를 전역으로 노출
+var __patched = __orig_code.replace(
+    /\\},\\{\\},\\[\\]\\);?\\s*$/,
+    '},{},[1]);'
+);
+
+// Function 생성자로 실행 (eval 대안)
+try {
+    var __fn = new Function(__patched + '; return typeof module !== "undefined" ? module.exports : undefined;');
+    __overcooked_exports = __fn();
+} catch(e) {
+    console.warn('Method 1 failed:', e);
+}
+__overcooked_exports;
+        `;
+        
+        // 가장 간단한 방법으로 시도
+        eval(modifiedCode);
+        
+        // 전역에서 찾기
+        if (window.Overcooked) {
+            return window.Overcooked;
+        }
+        
+        return null;
+    } catch(e) {
+        console.error('라이브러리 로드 실패:', e);
+        return null;
+    }
+}
+
+// 게임 상태
+var currentGame = null;
+var currentLayout = null;
+var gameInterval = null;
+
+// 레이아웃 정의
+const LAYOUTS = {
+    'cramped_room': [
+        "XXPXX",
+        "O  2O",
+        "X1  X",
+        "XDXSX"
+    ],
+    'asymmetric_advantages': [
+        "XXXXXXXXX",
+        "O XSXOX S",
+        "X   P 1 X",
+        "X2  P   X",
+        "XXXDXDXXX"
+    ],
+    'coordination_ring': [
+        "XXXPX",
+        "X 1 P",
+        "D2X X",
+        "O   X",
+        "XOSXX"
+    ],
+    'random3': [
+        "XXXPPXXX",
+        "X      X",
+        "D XXXX S",
+        "X2    1X",
+        "XXXOOXXX"
+    ],
+    'random0': [
+        "XXXPX",
+        "O X1P",
+        "O2X X",
+        "D X X",
+        "XXXSX"
+    ],
+    'simple': [
+        "XXPXX",
+        "O  2O",
+        "X1  X",
+        "XDXSX"
+    ]
+};
+
+const LAYOUT_NAMES_KR = {
+    'cramped_room': 'Cramped Room',
+    'asymmetric_advantages': 'Asymmetric',
+    'coordination_ring': 'Coordination Ring',
+    'random3': 'Random 3',
+    'random0': 'Random 0',
+    'simple': 'Simple'
+};
+
+async function startGame(layoutName) {
+    currentLayout = layoutName;
+    
+    // UI 전환
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('game-screen').style.display = 'flex';
+    document.getElementById('layout-display').textContent = LAYOUT_NAMES_KR[layoutName] || layoutName;
+    document.getElementById('score-value').textContent = '0';
+    document.getElementById('time-value').textContent = '60';
+    document.getElementById('time-value').classList.remove('urgent');
+    
+    // 게임 오버 오버레이 숨기기
+    document.getElementById('game-over-overlay').classList.remove('show');
+    
+    // 라이브러리 로드
+    if (!window._overcookedLoaded) {
+        try {
+            await loadOvercookedLibrary();
+            window._overcookedLoaded = true;
+        } catch(e) {
+            console.warn('Library load attempt:', e);
+        }
+    }
+    
+    // OvercookedGame 찾기
+    let OC = null;
+    
+    // 다양한 전역 변수명 시도
+    const candidates = ['Overcooked', 'OvercookedGame', 'overcooked'];
+    for (let name of candidates) {
+        if (window[name] && window[name].OvercookedGame) {
+            OC = window[name];
+            break;
+        }
+    }
+    
+    if (OC) {
+        initWithLibrary(OC, layoutName);
+    } else {
+        // 폴백: Canvas 기반 자체 게임 렌더러 사용
+        initFallbackGame(layoutName);
+    }
+}
+
+function initWithLibrary(OC, layoutName) {
+    const container = document.getElementById('game-area');
+    container.innerHTML = '';
+    container.id = 'game-area';
+    
+    const OvercookedGame = OC.OvercookedGame.OvercookedGame;
+    const OvercookedMDP = OC.OvercookedMDP;
+    const Direction = OvercookedMDP.Direction;
+    const Action = OvercookedMDP.Action;
+    const [NORTH, SOUTH, EAST, WEST] = Direction.CARDINAL;
+    const [STAY, INTERACT_A] = [Direction.STAY, Action.INTERACT];
+    
+    const startGrid = LAYOUTS[layoutName];
+    const TIMESTEP = 150;
+    const MAX_TIME = 60;
+    const PLAYER_INDEX = 0;
+    const AGENT_INDEX = 1;
+    
+    // NPC 정책: 간단한 상태 기반 AI
+    const npc_policy = createSmartNPC(OvercookedMDP, Direction, Action);
+    
+    const game = new OvercookedGame({
+        start_grid: startGrid,
+        container_id: 'game-area',
+        assets_loc: '/static/assets/',
+        ANIMATION_DURATION: TIMESTEP * 0.9,
+        tileSize: 80,
+        COOK_TIME: 20,
+        explosion_time: Number.MAX_SAFE_INTEGER,
+        DELIVERY_REWARD: 5,
+        always_serve: 'onion',
+        player_colors: { 0: 'green', 1: 'blue' }
+    });
+    
+    game.init();
+    
+    const startTime = new Date().getTime();
+    let state = game.mdp.get_start_state(['onion']);
+    game.drawState(state);
+    let joint_action = [STAY, STAY];
+    let score = 0;
+    let timeLeft = MAX_TIME;
+    
+    // 키 입력
+    function onKeyDown(e) {
+        let action;
+        switch(e.which) {
+            case 37: action = WEST; break;
+            case 38: action = NORTH; break;
+            case 39: action = EAST; break;
+            case 40: action = SOUTH; break;
+            case 32: action = INTERACT_A; break;
+            default: return;
+        }
+        e.preventDefault();
+        joint_action[PLAYER_INDEX] = action;
+        document.removeEventListener('keydown', onKeyDown);
+    }
+    document.addEventListener('keydown', onKeyDown);
+    
+    // 게임 루프
+    if (gameInterval) clearInterval(gameInterval);
+    
+    gameInterval = setInterval(() => {
+        // NPC 행동 계산
+        joint_action[AGENT_INDEX] = npc_policy(state, game);
+        
+        // 상태 전이
+        let [[next_state, prob], reward] = game.mdp.get_transition_states_and_probs({
+            state, joint_action
+        });
+        
+        game.drawState(next_state);
+        score += reward;
+        game.drawScore(score);
+        
+        const elapsed = (new Date().getTime() - startTime) / 1000;
+        timeLeft = Math.round(MAX_TIME - elapsed);
+        game.drawTimeLeft(timeLeft);
+        
+        // HUD 업데이트
+        document.getElementById('score-value').textContent = score;
+        document.getElementById('time-value').textContent = Math.max(0, timeLeft);
+        if (timeLeft <= 10) {
+            document.getElementById('time-value').classList.add('urgent');
+        }
+        
+        state = next_state;
+        joint_action = [STAY, STAY];
+        document.addEventListener('keydown', onKeyDown);
+        
+        if (timeLeft <= 0) {
+            clearInterval(gameInterval);
+            gameInterval = null;
+            document.removeEventListener('keydown', onKeyDown);
+            game.close();
+            showGameOver(score);
+        }
+    }, TIMESTEP);
+    
+    currentGame = { close: () => {
+        clearInterval(gameInterval);
+        document.removeEventListener('keydown', onKeyDown);
+        game.close();
+    }};
+}
+
+// 스마트 NPC: 상태를 보고 유용한 행동 선택
+function createSmartNPC(OvercookedMDP, Direction, Action) {
+    const [NORTH, SOUTH, EAST, WEST] = Direction.CARDINAL;
+    const STAY = Direction.STAY;
+    const INTERACT_A = Action.INTERACT;
+    
+    // 간단한 순환 행동 (상태 기반 AI가 없을 때 폴백)
+    const action_loop = [SOUTH, WEST, NORTH, EAST];
+    let ai = 0;
+    const pause = 3;
+    
+    return function(state, game) {
+        // 기본 순환 행동
+        let a = STAY;
+        if (ai % pause === 0) {
+            a = action_loop[Math.floor(ai / pause) % action_loop.length];
+        }
+        ai++;
+        return a;
+    };
+}
+
+// =====================================================
+// 폴백: Canvas 기반 자체 게임 (overcooked 라이브러리 없을 때)
+// =====================================================
+
+function initFallbackGame(layoutName) {
+    const container = document.getElementById('game-area');
+    container.innerHTML = '';
+    
+    const grid = LAYOUTS[layoutName];
+    const ROWS = grid.length;
+    const COLS = grid[0].length;
+    const TILE = 70;
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = COLS * TILE;
+    canvas.height = ROWS * TILE + 60;
+    canvas.style.display = 'block';
+    container.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    
+    // 게임 상태
+    const terrain = grid.map(row => row.split(''));
+    
+    // 플레이어 시작 위치 찾기
+    let p1pos = null, p2pos = null;
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            if (terrain[r][c] === '1') { p1pos = {x: c, y: r}; terrain[r][c] = ' '; }
+            if (terrain[r][c] === '2') { p2pos = {x: c, y: r}; terrain[r][c] = ' '; }
+        }
+    }
+    
+    const COLORS = {
+        'X': '#555', 'O': '#e67e22', 'D': '#3498db', 
+        'S': '#27ae60', 'P': '#8e44ad', 'T': '#c0392b',
+        ' ': '#f5e6d3'
+    };
+    
+    // 플레이어
+    let player = {
+        pos: p1pos || {x: 1, y: 1},
+        dir: {x: 0, y: 1},
+        holding: null,  // null | 'onion' | 'soup' | 'dish'
+        color: '#2ecc71'
+    };
+    
+    // NPC
+    let npc = {
+        pos: p2pos || {x: 2, y: 2},
+        dir: {x: 0, y: -1},
+        holding: null,
+        color: '#3498db'
+    };
+    
+    // 게임 오브젝트
+    let pots = [];  // {x, y, onions: 0-3, cooking: false, cookTime: 0, done: false}
+    let counters = {};  // "x,y" -> item
+    
+    // 냄비 위치 찾기
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            if (terrain[r][c] === 'P') {
+                pots.push({x: c, y: r, onions: 0, cooking: false, cookTime: 0, done: false});
+            }
+        }
+    }
+    
+    let score = 0;
+    let timeLeft = 60;
+    let gameOver = false;
+    const startTime = Date.now();
+    
+    // 키 상태
+    let keys = {};
+    let lastMove = 0;
+    const MOVE_DELAY = 120;
+    
+    function isWall(x, y) {
+        if (y < 0 || y >= ROWS || x < 0 || x >= COLS) return true;
+        return terrain[y][x] === 'X';
+    }
+    
+    function isCounter(x, y) {
+        if (y < 0 || y >= ROWS || x < 0 || x >= COLS) return false;
+        return 'XOPDS'.includes(terrain[y][x]);
+    }
+    
+    function interact(p) {
+        // 바라보는 방향의 타일과 상호작용
+        const tx = p.pos.x + p.dir.x;
+        const ty = p.pos.y + p.dir.y;
+        if (ty < 0 || ty >= ROWS || tx < 0 || tx >= COLS) return;
+        
+        const tile = terrain[ty][tx];
+        const key = tx + ',' + ty;
+        
+        if (tile === 'O') {
+            // 양파 집기
+            if (!p.holding) p.holding = 'onion';
+        } else if (tile === 'D') {
+            // 그릇 집기
+            if (!p.holding) p.holding = 'dish';
+        } else if (tile === 'P') {
+            // 냄비 상호작용
+            const pot = pots.find(pt => pt.x === tx && pt.y === ty);
+            if (pot) {
+                if (p.holding === 'onion' && pot.onions < 3 && !pot.done) {
+                    pot.onions++;
+                    p.holding = null;
+                    if (pot.onions === 3) pot.cooking = true;
+                } else if (p.holding === 'dish' && pot.done) {
+                    p.holding = 'soup';
+                    pot.onions = 0; pot.cooking = false; pot.cookTime = 0; pot.done = false;
+                }
+            }
+        } else if (tile === 'S') {
+            // 서빙
+            if (p.holding === 'soup') {
+                score += 5;
+                p.holding = null;
+            }
+        } else if (tile === ' ') {
+            // 카운터에 올려놓기/집기
+            if (p.holding && !counters[key]) {
+                counters[key] = p.holding;
+                p.holding = null;
+            } else if (!p.holding && counters[key]) {
+                p.holding = counters[key];
+                delete counters[key];
+            }
+        }
+    }
+    
+    // NPC 간단 AI
+    let npcAI = 0;
+    const npcActions = ['up','up','left','left','down','down','right','right'];
+    function npcStep() {
+        const dirs = {
+            'up': {x:0,y:-1}, 'down': {x:0,y:1},
+            'left': {x:-1,y:0}, 'right': {x:1,y:0}
+        };
+        const d = dirs[npcActions[npcAI % npcActions.length]];
+        npcAI++;
+        
+        const nx = npc.pos.x + d.x;
+        const ny = npc.pos.y + d.y;
+        if (!isCounter(nx, ny) && !(nx === player.pos.x && ny === player.pos.y)) {
+            npc.pos.x = nx;
+            npc.pos.y = ny;
+            npc.dir = d;
+        }
+    }
+    
+    let npcTimer = 0;
+    
+    function drawTile(x, y, color, label) {
+        ctx.fillStyle = color;
+        ctx.fillRect(x * TILE + 1, y * TILE + 1, TILE - 2, TILE - 2);
+        if (label) {
+            ctx.fillStyle = '#fff';
+            ctx.font = `${TILE * 0.35}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, x * TILE + TILE/2, y * TILE + TILE/2);
+        }
+    }
+    
+    function getItemEmoji(item) {
+        if (item === 'onion') return '🧅';
+        if (item === 'dish') return '🥣';
+        if (item === 'soup') return '🍲';
+        return '';
+    }
+    
+    function draw() {
+        ctx.fillStyle = '#2c2c2c';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // 타일 그리기
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                const t = terrain[r][c];
+                let color = COLORS[t] || '#888';
+                let label = '';
+                
+                if (t === 'O') label = '🧅';
+                else if (t === 'D') label = '🥣';
+                else if (t === 'S') label = '🍽';
+                else if (t === 'P') {
+                    const pot = pots.find(p => p.x === c && p.y === r);
+                    if (pot) {
+                        label = pot.done ? '🍲' : pot.cooking ? `🫕${pot.cookTime}` : `🥘${pot.onions}`;
+                    }
+                }
+                
+                drawTile(c, r, color, label);
+            }
+        }
+        
+        // 카운터 위 아이템
+        for (let [key, item] of Object.entries(counters)) {
+            const [cx, cy] = key.split(',').map(Number);
+            ctx.font = `${TILE * 0.45}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(getItemEmoji(item), cx * TILE + TILE/2, cy * TILE + TILE/2);
+        }
+        
+        // 플레이어 1
+        ctx.fillStyle = player.color;
+        ctx.beginPath();
+        ctx.arc(player.pos.x * TILE + TILE/2, player.pos.y * TILE + TILE/2, TILE*0.35, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('P1', player.pos.x * TILE + TILE/2, player.pos.y * TILE + TILE/2);
+        if (player.holding) {
+            ctx.font = `${TILE*0.35}px sans-serif`;
+            ctx.fillText(getItemEmoji(player.holding), 
+                player.pos.x * TILE + TILE/2, player.pos.y * TILE + TILE*0.15);
+        }
+        
+        // NPC
+        ctx.fillStyle = npc.color;
+        ctx.beginPath();
+        ctx.arc(npc.pos.x * TILE + TILE/2, npc.pos.y * TILE + TILE/2, TILE*0.3, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('AI', npc.pos.x * TILE + TILE/2, npc.pos.y * TILE + TILE/2);
+        
+        // 하단 HUD
+        const hudY = ROWS * TILE + 5;
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(0, ROWS * TILE, canvas.width, 60);
+        
+        ctx.fillStyle = '#f0a500';
+        ctx.font = 'bold 18px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`점수: ${score}`, 10, hudY + 20);
+        
+        ctx.fillStyle = timeLeft <= 10 ? '#ff4444' : '#fff';
+        ctx.textAlign = 'right';
+        ctx.fillText(`⏱ ${Math.max(0, timeLeft)}초`, canvas.width - 10, hudY + 20);
+        
+        ctx.fillStyle = '#888';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('← ↑ ↓ → 이동  |  Space 상호작용', canvas.width/2, hudY + 45);
+    }
+    
+    function processInput(now) {
+        if (now - lastMove < MOVE_DELAY) return;
+        
+        let moved = false;
+        let dx = 0, dy = 0;
+        
+        if (keys['ArrowUp'] || keys['38']) { dy = -1; player.dir = {x:0, y:-1}; }
+        else if (keys['ArrowDown'] || keys['40']) { dy = 1; player.dir = {x:0, y:1}; }
+        else if (keys['ArrowLeft'] || keys['37']) { dx = -1; player.dir = {x:-1, y:0}; }
+        else if (keys['ArrowRight'] || keys['39']) { dx = 1; player.dir = {x:1, y:0}; }
+        
+        if (dx !== 0 || dy !== 0) {
+            const nx = player.pos.x + dx;
+            const ny = player.pos.y + dy;
+            if (!isCounter(nx, ny) && !(nx === npc.pos.x && ny === npc.pos.y)) {
+                player.pos.x = nx;
+                player.pos.y = ny;
+            }
+            moved = true;
+        }
+        
+        if (keys[' '] || keys['32'] || keys['Space']) {
+            interact(player);
+            moved = true;
+        }
+        
+        if (moved) lastMove = now;
+    }
+    
+    // 냄비 요리 진행
+    function updatePots(dt) {
+        for (let pot of pots) {
+            if (pot.cooking && !pot.done) {
+                pot.cookTime += dt;
+                if (pot.cookTime >= 20) {
+                    pot.done = true;
+                    pot.cooking = false;
+                }
+            }
+        }
+    }
+    
+    let lastPotUpdate = Date.now();
+    
+    // 게임 루프
+    let rafId = null;
+    function gameLoop(timestamp) {
+        if (gameOver) return;
+        
+        const now = Date.now();
+        const elapsed = (now - startTime) / 1000;
+        timeLeft = Math.round(60 - elapsed);
+        
+        // 냄비 업데이트 (초 단위)
+        const dtPot = (now - lastPotUpdate) / 1000;
+        if (dtPot >= 0.5) {
+            updatePots(dtPot);
+            lastPotUpdate = now;
+        }
+        
+        // 입력 처리
+        processInput(now);
+        
+        // NPC 이동 (매 400ms)
+        npcTimer += 16;
+        if (npcTimer >= 400) {
+            npcStep();
+            npcTimer = 0;
+        }
+        
+        // HUD 업데이트
+        document.getElementById('score-value').textContent = score;
+        document.getElementById('time-value').textContent = Math.max(0, timeLeft);
+        if (timeLeft <= 10) {
+            document.getElementById('time-value').classList.add('urgent');
+        }
+        
+        draw();
+        
+        if (timeLeft <= 0) {
+            gameOver = true;
+            showGameOver(score);
+            return;
+        }
+        
+        rafId = requestAnimationFrame(gameLoop);
+    }
+    
+    // 키 이벤트
+    function onKeyDown(e) {
+        keys[e.key] = true;
+        keys[e.code] = true;
+        keys[e.which] = true;
+        if ([37,38,39,40,32].includes(e.which)) e.preventDefault();
+    }
+    function onKeyUp(e) {
+        keys[e.key] = false;
+        keys[e.code] = false;
+        keys[e.which] = false;
+    }
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keyup', onKeyUp);
+    
+    currentGame = {
+        close: () => {
+            gameOver = true;
+            if (rafId) cancelAnimationFrame(rafId);
+            document.removeEventListener('keydown', onKeyDown);
+            document.removeEventListener('keyup', onKeyUp);
+        }
+    };
+    
+    rafId = requestAnimationFrame(gameLoop);
+}
+
+function showGameOver(finalScore) {
+    document.getElementById('final-score').textContent = finalScore + ' 점';
+    document.getElementById('game-over-overlay').classList.add('show');
+}
+
+function replayGame() {
+    document.getElementById('game-over-overlay').classList.remove('show');
+    if (currentGame) { try { currentGame.close(); } catch(e) {} }
+    startGame(currentLayout);
+}
+
+function goToMenu() {
+    if (currentGame) { try { currentGame.close(); } catch(e) {} }
+    if (gameInterval) { clearInterval(gameInterval); gameInterval = null; }
+    document.getElementById('game-screen').style.display = 'none';
+    document.getElementById('start-screen').style.display = 'block';
+    document.getElementById('game-over-overlay').classList.remove('show');
+}
+</script>
+
+</body>
+</html>
