@@ -11,6 +11,7 @@
   const canvas = document.getElementById("canvas");
   var gameOverlayer = document.getElementById("overlay");
   const floor = document.getElementById("floor");
+  const nextBallImage = document.getElementById("nextBallImage");
 
   const ctx = canvas.getContext("2d");
 
@@ -32,12 +33,55 @@
   let mousePos;
   let isClicking = false;
   let isMouseOver = false;
-  let newSize = 1;
 
   let isGameOver = false;
   let score = 0;
+  let nextBallSize = 1;
 
   let isLineEnable = false;
+
+  function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+  }
+
+  function randomSpawnSize() {
+    return Math.ceil(Math.random() * 4);
+  }
+
+  function getCanvasX(clientX) {
+    const rect = canvas.getBoundingClientRect();
+    return ((clientX - rect.left) * render.options.width) / rect.width;
+  }
+
+  function updateNextBallPreview(size) {
+    if (!nextBallImage) return;
+
+    nextBallImage.src = `assets/img/${Math.min(size, 13)}.png`;
+    nextBallImage.alt = `다음에 떨어질 ${size}레벨 공`;
+  }
+
+  function releaseBall() {
+    if (isGameOver || ball == null) return;
+
+    const spawnSize = nextBallSize;
+
+    ball.createdAt = 0;
+    ball.collisionFilter = {
+      group: 0,
+      category: 1,
+      mask: -1,
+    };
+    Body.setVelocity(ball, { x: 0, y: (100 / fps) * 5.5 });
+    ball = null;
+
+    setTimeout(() => {
+      if (isGameOver) return;
+
+      createNewBall(spawnSize);
+      nextBallSize = randomSpawnSize();
+      updateNextBallPreview(nextBallSize);
+    }, 500);
+  }
 
   const background = Bodies.rectangle(240, 360, 480, 720, {
     isStatic: true,
@@ -73,16 +117,17 @@
 
   window.addEventListener("resize", resize);
 
-  addEventListener("mousedown", () => {
+  addEventListener("mousedown", (e) => {
     if (isGameOver) return;
 
+    mousePos = getCanvasX(e.clientX);
     isClicking = isMouseOver;
   });
   addEventListener("touchstart", (e) => {
     if (isGameOver) return;
 
     isClicking = true;
-    mousePos = e.touches[0].clientX / parent.style.zoom;
+    mousePos = getCanvasX(e.touches[0].clientX);
   });
 
   addEventListener("mouseup", () => {
@@ -94,55 +139,24 @@
     if (isGameOver) return;
 
     isClicking = false;
-
-    if (isGameOver) return;
-
-    if (ball != null) {
-      ball.createdAt = 0;
-      ball.collisionFilter = {
-        group: 0,
-        category: 1,
-        mask: -1,
-      };
-      Body.setVelocity(ball, { x: 0, y: (100 / fps) * 5.5 });
-      ball = null;
-
-      newSize = Math.ceil(Math.random() * 4)
-
-      setTimeout(() => createNewBall(newSize), 500);
-    }
+    releaseBall();
   });
 
   addEventListener("mousemove", (e) => {
     if (isGameOver) return;
 
-    const rect = canvas.getBoundingClientRect();
-    mousePos = e.clientX / parent.style.zoom - rect.left;
+    mousePos = getCanvasX(e.clientX);
   });
   addEventListener("touchmove", (e) => {
     if (isGameOver) return;
 
-    const rect = canvas.getBoundingClientRect();
-    mousePos = e.touches[0].clientX / parent.style.zoom - rect.left;
+    mousePos = getCanvasX(e.touches[0].clientX);
   });
 
   addEventListener("click", () => {
     if (isGameOver || !isMouseOver) return;
 
-    if (ball != null) {
-      ball.createdAt = 0;
-      ball.collisionFilter = {
-        group: 0,
-        category: 1,
-        mask: -1,
-      };
-      Body.setVelocity(ball, { x: 0, y: (100 / fps) * 5.5 });
-      ball = null;
-
-      newSize = Math.ceil(Math.random() * 4);
-
-      setTimeout(() => createNewBall(newSize), 500);
-    }
+    releaseBall();
   });
 
   canvas.addEventListener("mouseover", () => {
@@ -164,13 +178,27 @@
       });
 
       if (isClicking && mousePos !== undefined) {
-        ball.position.x = mousePos;
+        const targetX = clamp(
+          mousePos,
+          ball.controlRadius,
+          render.options.width - ball.controlRadius
+        );
 
-        if (mousePos > 455) ball.position.x = 455;
-        else if (mousePos < 25) ball.position.x = 25;
+        Body.setPosition(ball, { x: targetX, y: 50 });
+        Body.setVelocity(ball, { x: 0, y: 0 });
+      } else {
+        const clampedX = clamp(
+          ball.position.x,
+          ball.controlRadius,
+          render.options.width - ball.controlRadius
+        );
+
+        if (Math.abs(clampedX - ball.position.x) > 0.01) {
+          Body.setPosition(ball, { x: clampedX, y: 50 });
+        } else {
+          ball.position.y = 50;
+        }
       }
-
-      ball.position.y = 50;
     }
 
     isLineEnable = false;
@@ -324,8 +352,10 @@
     ball = null;
     engine.timing.timeScale = 1;
     score = 0;
+    nextBallSize = randomSpawnSize();
 
     gameOverlayer.style.display = "none";
+    updateNextBallPreview(nextBallSize);
 
     while (engine.world.bodies.length > 4) {
       engine.world.bodies.pop();
@@ -413,6 +443,7 @@
     c.createdAt = Date.now();
     c.restitution = 0.3;
     c.friction = 0.1;
+    c.controlRadius = collisionRadius;
 
     return c;
   }
