@@ -75,6 +75,11 @@ button * {
   isolation: isolate;
 }
 
+#game,
+#canvas {
+  touch-action: none;
+}
+
 #game::before {
   content: "";
   position: absolute;
@@ -191,11 +196,45 @@ a {
 }
 
 #footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
   padding: 8px 14px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(8px);
+}
+
+#nextBallPanel {
+  position: absolute;
+  left: 18px;
+  top: 74px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  padding: 0;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+#nextBallPreview {
+  display: flex;
+  align-items: center;
+}
+
+#nextBallImage {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  opacity: 0.52;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.28));
 }
 
 #footer p {
@@ -217,10 +256,6 @@ a {
   }
 
   #floor {
-    border-radius: 0 0 28px 28px;
-  }
-
-  .container {
     grid-template-columns: 1fr;
     grid-template-rows: 10fr 1fr 1fr;
 
@@ -251,5 +286,12 @@ a {
 
   #footer {
     border-radius: 24px;
+  }
+
+  #nextBallPanel {
+    left: 14px;
+    top: 82px;
+    transform: scale(0.94);
+    transform-origin: top left;
   }
 }
